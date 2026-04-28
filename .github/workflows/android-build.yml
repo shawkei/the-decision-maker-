@@ -55,6 +55,12 @@ jobs:
           # Ensure permissions
           chmod +x android/gradlew
           
+          # Generate icons if assets exist
+          if [ -d "assets" ] && [ -f "assets/icon.png" ]; then
+            echo "Generating icons from assets/icon.png..."
+            npx @capacitor/assets generate --android --icon ./assets/icon.png
+          fi
+          
           # Sync Capacitor
           npx cap sync android
 
