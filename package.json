@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "static-build": "mkdir -p dist && cp index.html dist/index.html",
+    "assets-generate": "npx @capacitor/assets generate --icon ./assets/icon.png",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
