@@ -8,6 +8,8 @@
     <link rel="manifest" href="/manifest.json">
     <title>The Decision Maker – Luxury Minimalist</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
         :root {
             --bg-dark: #0d0d0d;
             --primary: #d4af37;
@@ -270,26 +272,34 @@
             overflow-y: auto;
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 12px;
             align-content: flex-start;
             margin-bottom: 2rem;
-            padding: 15px;
+            padding: 10px;
         }
 
         .chip {
             background: #111;
             color: var(--accent-gold);
-            padding: 12px 24px;
+            padding: 10px 18px;
             border-radius: 25px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 1.1rem;
+            gap: 10px;
+            font-size: 1rem;
             font-weight: 700;
-            box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.6);
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.6);
             animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             transition: all 0.2s;
             border: 3px solid var(--primary);
+            max-width: 100%;
+        }
+
+        .chip span:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 200px;
         }
 
         .chip:hover { transform: scale(1.05) rotate(2deg); box-shadow: 8px 8px 0px var(--secondary); }
@@ -558,9 +568,8 @@
         // --- Audio Logic (Web Audio API) ---
         const AudioFX = (() => {
             let audioCtx = null;
-            let unlocked = false;
-
-            const init = () => {
+            
+            const init = async () => {
                 try {
                     if (!audioCtx) {
                         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -569,17 +578,16 @@
                         }
                     }
                     if (audioCtx && audioCtx.state === 'suspended') {
-                        audioCtx.resume();
+                        await audioCtx.resume();
                     }
-                    unlocked = true;
                 } catch (e) {
                     console.error("Audio init failed", e);
                 }
             };
 
             const playTick = () => {
-                if (!audioCtx || audioCtx.state === 'suspended') init();
-                if (!audioCtx) return;
+                if (!audioCtx) init();
+                if (!audioCtx || audioCtx.state !== 'running') return;
 
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
@@ -595,8 +603,8 @@
             };
 
             const playClick = () => {
-                if (!audioCtx || audioCtx.state === 'suspended') init();
-                if (!audioCtx) return;
+                if (!audioCtx) init();
+                if (!audioCtx || audioCtx.state !== 'running') return;
 
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
@@ -611,8 +619,8 @@
             };
 
             const playWin = () => {
-                if (!audioCtx || audioCtx.state === 'suspended') init();
-                if (!audioCtx) return;
+                if (!audioCtx) init();
+                if (!audioCtx || audioCtx.state !== 'running') return;
 
                 const now = audioCtx.currentTime;
                 const notes = [523.25, 659.25, 783.99, 1046.50];
@@ -631,7 +639,7 @@
                 });
             };
 
-            return { playTick, playWin, playClick, init, isUnlocked: () => unlocked };
+            return { playTick, playWin, playClick, init };
         })();
 
         const state = {

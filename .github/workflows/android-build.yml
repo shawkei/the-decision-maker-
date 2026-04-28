@@ -30,13 +30,12 @@ jobs:
 
       - name: Setup Android Project
         run: |
-          # 1. REMOVE AND RE-ADD ANDROID FROM SCRATCH
+          # 1. CLEAN START
           echo "Removing and re-adding Android platform..."
           rm -rf android
           npx cap add android
           
-          # 2. PREPARE ASSETS FOR CAPACITOR-ASSETS TOOL
-          # The tool works best when it finds specific names in the assets folder
+          # 2. PREPARE ASSETS
           echo "Preparing assets..."
           mkdir -p assets
           cp assets/icon.png assets/icon-only.png
@@ -45,25 +44,50 @@ jobs:
           if [ ! -f "assets/splash.png" ]; then cp assets/icon.png assets/splash.png; fi
           if [ ! -f "assets/splash-dark.png" ]; then cp assets/icon.png assets/splash-dark.png; fi
 
-          # 3. GENERATE ALL ASSETS (ICONS & SPLASH)
-          echo "Generating icons..."
+          # 3. GENERATE INITIAL ASSETS
+          echo "Generating assets via tool..."
           npx @capacitor/assets generate --android
 
-          # 4. BRUTE FORCE FIXED: DELETE ADAPTIVE ICONS AND OVERWRITE ALL PNGs
-          # This forces Android to use the legacy PNG icons which is more reliable for custom icons.
-          echo "Deleting adaptive icons to force legacy PNG usage..."
-          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          # 4. NUCLEAR ICON OVERWRITE (NODE SCRIPT)
+          echo "Executing deep icon overwrite..."
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const resDir = 'android/app/src/main/res';
+          const sourceIcon = 'assets/icon.png';
           
-          echo "Overwriting every possible launcher PNG with your icon..."
-          # Find all launcher PNGs and replace them with the source icon.png
-          find android/app/src/main/res -name "ic_launcher*.png" -exec cp assets/icon.png {} \;
+          function walk(dir) {
+            fs.readdirSync(dir).forEach(file => {
+              const fullPath = path.join(dir, file);
+              if (fs.statSync(fullPath).isDirectory()) {
+                walk(fullPath);
+              } else {
+                // If it's a launcher icon (png or xml), we handle it
+                if (file.startsWith('ic_launcher')) {
+                  if (file.endsWith('.xml')) {
+                    console.log('Deleting XML:', fullPath);
+                    fs.unlinkSync(fullPath);
+                  } else if (file.endsWith('.png')) {
+                    console.log('Overwriting PNG:', fullPath);
+                    fs.copyFileSync(sourceIcon, fullPath);
+                  }
+                }
+              }
+            });
+          }
           
-          # Remove any XMLs that might still be trying to define adaptive icons
-          find android/app/src/main/res -name "ic_launcher*.xml" -delete
-          
-          echo "Icon overwrite complete."
+          if (fs.existsSync(resDir)) {
+            // Delete anydpi folder to disable adaptive icon complexity
+            const anyDpi = path.join(resDir, 'mipmap-anydpi-v26');
+            if (fs.existsSync(anyDpi)) {
+              console.log('Removing anydpi directory...');
+              fs.rmSync(anyDpi, { recursive: true, force: true });
+            }
+            walk(resDir);
+          }
+          "
 
-          # 5. FIX GRADLE WRAPPER (Common Capacitor setup issue)
+          # 5. FIX GRADLE WRAPPER
           GRADLE_VERSION=$(grep "distributionUrl" android/gradle/wrapper/gradle-wrapper.properties | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
           if [ -z "$GRADLE_VERSION" ]; then GRADLE_VERSION="8.2.1"; fi
           echo "Downloading official Gradle wrapper jar v$GRADLE_VERSION..."
