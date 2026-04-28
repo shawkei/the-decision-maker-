@@ -57,8 +57,12 @@ jobs:
           
           # Generate icons if assets exist
           if [ -d "assets" ] && [ -f "assets/icon.png" ]; then
-            echo "Generating icons from assets/icon.png..."
-            npx @capacitor/assets generate --android --icon ./assets/icon.png
+            echo "Preparing assets..."
+            # Ensure splash exists to prevent tool failure
+            if [ ! -f "assets/splash.png" ]; then cp assets/icon.png assets/splash.png; fi
+            
+            echo "Generating icons and splash screens from assets..."
+            npx @capacitor/assets generate --android
           fi
           
           # Sync Capacitor
