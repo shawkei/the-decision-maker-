@@ -49,19 +49,19 @@ jobs:
           echo "Generating icons..."
           npx @capacitor/assets generate --android
 
-          # 4. EXTREME FORCE FIX FOR ICON COLORS/PLACEMENTS
-          echo "Bypassing adaptive icon logic by overwriting all resources..."
+          # 4. BRUTE FORCE FIXED: DELETE ADAPTIVE ICONS AND OVERWRITE ALL PNGs
+          # This forces Android to use the legacy PNG icons which is more reliable for custom icons.
+          echo "Deleting adaptive icons to force legacy PNG usage..."
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          
+          echo "Overwriting every possible launcher PNG with your icon..."
+          # Find all launcher PNGs and replace them with the source icon.png
           find android/app/src/main/res -name "ic_launcher*.png" -exec cp assets/icon.png {} \;
+          
+          # Remove any XMLs that might still be trying to define adaptive icons
           find android/app/src/main/res -name "ic_launcher*.xml" -delete
           
-          # Re-create a simple XML for ANYDPI (API 26+) that points directly to the PNGs
-          for res_dir in android/app/src/main/res/mipmap-anydpi-v26; do
-            if [ -d "$res_dir" ]; then
-              echo "Re-linking anydpi launcher..."
-              echo "<?xml version=\"1.0\" encoding=\"utf-8\"?><adaptive-icon xmlns:android=\"http://schemas.android.com/apk/res/android\"><background android:drawable=\"@mipmap/ic_launcher\" /><foreground android:drawable=\"@mipmap/ic_launcher\" /></adaptive-icon>" > "$res_dir/ic_launcher.xml"
-              echo "<?xml version=\"1.0\" encoding=\"utf-8\"?><adaptive-icon xmlns:android=\"http://schemas.android.com/apk/res/android\"><background android:drawable=\"@mipmap/ic_launcher_round\" /><foreground android:drawable=\"@mipmap/ic_launcher_round\" /></adaptive-icon>" > "$res_dir/ic_launcher_round.xml"
-            fi
-          done
+          echo "Icon overwrite complete."
 
           # 5. FIX GRADLE WRAPPER (Common Capacitor setup issue)
           GRADLE_VERSION=$(grep "distributionUrl" android/gradle/wrapper/gradle-wrapper.properties | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
