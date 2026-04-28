@@ -39,14 +39,29 @@ jobs:
           echo "Generating icons..."
           npx @capacitor/assets generate --android
 
-          # 3. NUCLEAR ICON OVERWRITE
+          # 3. SYNC PLATFORM
+          echo "Syncing Capacitor..."
+          npx cap sync android
+          
+          # 4. NUCLEAR ICON OVERWRITE
           # This script ensures that EVERY SINGLE launcher icon in the android project
           # is exactly your assets/icon.png. It removes adaptive icon XMLs which 
           # are usually the cause of the 'white circle' or 'green robot' issues.
+          # We also remove the roundIcon reference from the manifest.
           echo "Executing deep icon overwrite..."
           npx node -e "
           const fs = require('fs');
           const path = require('path');
+          
+          // 1. Remove roundIcon from Manifest
+          const manifestPath = 'android/app/src/main/AndroidManifest.xml';
+          if (fs.existsSync(manifestPath)) {
+            let manifest = fs.readFileSync(manifestPath, 'utf8');
+            manifest = manifest.replace(/android:roundIcon=\"@mipmap\/ic_launcher_round\"/g, '');
+            fs.writeFileSync(manifestPath, manifest);
+            console.log('Removed roundIcon from Manifest');
+          }
+
           const resDir = 'android/app/src/main/res';
           const sourceIcon = 'assets/icon.png';
           
@@ -60,7 +75,7 @@ jobs:
             fs.readdirSync(dir).forEach(file => {
               const fullPath = path.join(dir, file);
               if (fs.statSync(fullPath).isDirectory()) {
-                // Remove adaptive icon folders entirely
+                // Remove adaptive icon folders and version-specific overlaps
                 if (file.includes('anydpi') || file.includes('v24') || file.includes('v26')) {
                    console.log('Removing config folder:', fullPath);
                    fs.rmSync(fullPath, { recursive: true, force: true });
@@ -68,8 +83,8 @@ jobs:
                   processDir(fullPath);
                 }
               } else {
-                // If it is a launcher asset or background config
-                if (file.startsWith('ic_launcher') || file.includes('splash')) {
+                // Force overwrite ANY file that looks like a launcher icon
+                if (file.includes('ic_launcher')) {
                   if (file.endsWith('.xml')) {
                     console.log('Deleting XML config:', fullPath);
                     fs.unlinkSync(fullPath);
@@ -82,21 +97,17 @@ jobs:
             });
           }
           processDir(resDir);
-          
-          // Re-create a very simple ic_launcher.xml in anydpi if needed, 
-          // or just let it fall back to legacy PNGs (safest for forcing design).
           "
 
-          # 4. DOWNLOAD GRADLE WRAPPER
+          # 5. DOWNLOAD GRADLE WRAPPER
           GRADLE_VERSION=$(grep "distributionUrl" android/gradle/wrapper/gradle-wrapper.properties | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
           if [ -z "$GRADLE_VERSION" ]; then GRADLE_VERSION="8.2.1"; fi
           echo "Downloading Gradle Wrapper v$GRADLE_VERSION..."
           mkdir -p android/gradle/wrapper
           curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o android/gradle/wrapper/gradle-wrapper.jar
           
-          # 5. SYNC AND PERMISSIONS
+          # 6. FINAL PERMISSIONS
           chmod +x android/gradlew
-          npx cap sync android
 
       - name: Setup Java
         uses: actions/setup-java@v4
