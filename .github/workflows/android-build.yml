@@ -23,13 +23,16 @@ jobs:
 
       - name: Build Web App
         run: |
-          mkdir -p dist
-          cp index.html dist/index.html
+          npm run build
 
       - name: Setup Android Project
         run: |
-          npx cap add android
-          npx cap copy android
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            echo "Android platform already exists, skipping 'cap add'"
+          fi
+          npx cap sync android
 
       - name: Setup Java
         uses: actions/setup-java@v4
