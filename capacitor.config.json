@@ -1,0 +1,6 @@
+{
+  "appId": "com.luxury.decisionmaker",
+  "appName": "The Decision Maker",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
