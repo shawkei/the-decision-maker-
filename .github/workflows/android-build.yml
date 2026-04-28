@@ -61,7 +61,12 @@ jobs:
             # Ensure splash exists to prevent tool failure
             if [ ! -f "assets/splash.png" ]; then cp assets/icon.png assets/splash.png; fi
             
+            # Ensure web icons are updated in public folder
+            mkdir -p public
+            cp assets/icon.png public/icon.png
+            
             echo "Generating icons and splash screens from assets..."
+            # Using latest and being explicit
             npx @capacitor/assets generate --android
           fi
           
