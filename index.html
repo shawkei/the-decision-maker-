@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Decision Maker – Luxury Minimalist</title>
+    <style>
+        :root {
+            --bg-charcoal: #121212;
+            --gold-metallic: #D4AF37;
+            --gold-matte: #C5A021;
+            --white: #FFFFFF;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(212, 175, 55, 0.2);
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-charcoal);
+            color: var(--white);
+            font-family: var(--font-main);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #app {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Screen Transitions */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .screen.active {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateY(0);
+        }
+
+        .screen.inactive {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-20px);
+        }
+
+        /* Hero Text */
+        h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 3rem;
+            color: var(--gold-metallic);
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        /* Input Section */
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 2rem;
+        }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--gold-matte);
+            color: var(--white);
+            padding: 12px 4px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            border-color: var(--gold-metallic);
+        }
+
+        .add-btn {
+            background: transparent;
+            border: 1px solid var(--gold-metallic);
+            color: var(--gold-metallic);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            background: var(--gold-metallic);
+            color: var(--bg-charcoal);
+        }
+
+        /* Chips */
+        #options-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-content: flex-start;
+            margin-bottom: 2rem;
+            padding-right: 4px;
+        }
+
+        .chip {
+            background: linear-gradient(135deg, var(--gold-metallic), var(--gold-matte));
+            color: var(--bg-charcoal);
+            padding: 8px 16px;
+            border-radius: 100px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .chip .remove {
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 400;
+            line-height: 1;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Done Button */
+        .done-btn {
+            background: var(--gold-metallic);
+            color: var(--bg-charcoal);
+            border: none;
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .done-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        /* Wheel Screen */
+        .back-btn {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            background: transparent;
+            border: none;
+            color: var(--gold-metallic);
+            cursor: pointer;
+            font-size: 2rem;
+            z-index: 10;
+        }
+
+        .wheel-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        canvas {
+            max-width: 90vw;
+            max-height: 90vw;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
+        }
+
+        #indicator {
+            position: absolute;
+            top: calc(50% - 170px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background: var(--gold-metallic);
+            clip-path: polygon(100% 0, 0 0, 50% 100%);
+            z-index: 5;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+        }
+
+        /* Result Popup */
+        #result-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            padding: 3rem;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 80%;
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.15);
+            animation: slideUp 0.5s ease;
+        }
+
+        #winner-name {
+            font-size: 2.5rem;
+            font-weight: 200;
+            display: block;
+            margin: 1rem 0;
+            color: var(--gold-metallic);
+            text-shadow: 0 0 10px var(--gold-metallic);
+        }
+
+        .result-subtitle {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            opacity: 0.6;
+        }
+
+        .close-popup {
+            margin-top: 2rem;
+            background: transparent;
+            color: var(--gold-matte);
+            border: 1px solid var(--gold-matte);
+            padding: 10px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(40px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Custom Scrollbar */
+        #options-list::-webkit-scrollbar {
+            width: 3px;
+        }
+        #options-list::-webkit-scrollbar-thumb {
+            background: var(--gold-matte);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Screen 1: Setup -->
+        <div id="screen-setup" class="screen active">
+            <h1>The Decision</h1>
+            <div class="input-group">
+                <input type="text" id="option-input" placeholder="Type an option..." autocomplete="off">
+                <button class="add-btn" id="add-option" title="Add Option">+</button>
+            </div>
+            <div id="options-list"></div>
+            <button id="done-btn" class="done-btn" disabled>Done</button>
+        </div>
+
+        <!-- Screen 2: Wheel -->
+        <div id="screen-wheel" class="screen inactive">
+            <button class="back-btn" id="back-btn" title="Back">←</button>
+            <div class="wheel-container">
+                <div id="indicator"></div>
+                <canvas id="wheel-canvas" width="340" height="340"></canvas>
+            </div>
+        </div>
+
+        <!-- Result Popup -->
+        <div id="result-popup">
+            <div class="glass-card">
+                <span class="result-subtitle">THE CHOICE IS</span>
+                <span id="winner-name">GOLDEN TICKET</span>
+                <button class="close-popup" id="close-popup">Great</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            options: [],
+            isSpinning: false,
+            angle: 0,
+            spinSpeed: 0,
+            winner: null
+        };
+
+        const elements = {
+            setupScreen: document.getElementById('screen-setup'),
+            wheelScreen: document.getElementById('screen-wheel'),
+            input: document.getElementById('option-input'),
+            addBtn: document.getElementById('add-option'),
+            optionsList: document.getElementById('options-list'),
+            doneBtn: document.getElementById('done-btn'),
+            backBtn: document.getElementById('back-btn'),
+            canvas: document.getElementById('wheel-canvas'),
+            popup: document.getElementById('result-popup'),
+            winnerName: document.getElementById('winner-name'),
+            closePopup: document.getElementById('close-popup')
+        };
+
+        const ctx = elements.canvas.getContext('2d');
+        const centerX = elements.canvas.width / 2;
+        const centerY = elements.canvas.height / 2;
+        const radius = elements.canvas.width / 2 - 10;
+
+        // --- Setup Logic ---
+
+        function updateUI() {
+            elements.optionsList.innerHTML = '';
+            state.options.forEach((opt, index) => {
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.innerHTML = `<span>${opt}</span><span class="remove" data-index="${index}">×</span>`;
+                elements.optionsList.appendChild(chip);
+            });
+            elements.doneBtn.disabled = state.options.length < 2;
+        }
+
+        elements.addBtn.onclick = () => {
+            const val = elements.input.value.trim();
+            if (val && state.options.length < 12) {
+                state.options.push(val);
+                elements.input.value = '';
+                updateUI();
+            }
+        };
+
+        elements.input.onkeypress = (e) => {
+            if (e.key === 'Enter') elements.addBtn.click();
+        };
+
+        elements.optionsList.onclick = (e) => {
+            if (e.target.classList.contains('remove')) {
+                const index = parseInt(e.target.dataset.index);
+                state.options.splice(index, 1);
+                updateUI();
+            }
+        };
+
+        elements.doneBtn.onclick = () => {
+            elements.setupScreen.classList.remove('active');
+            elements.setupScreen.classList.add('inactive');
+            elements.wheelScreen.classList.remove('inactive');
+            elements.wheelScreen.classList.add('active');
+            drawWheel();
+        };
+
+        elements.backBtn.onclick = () => {
+            if (state.isSpinning) return;
+            elements.wheelScreen.classList.remove('active');
+            elements.wheelScreen.classList.add('inactive');
+            elements.setupScreen.classList.remove('inactive');
+            elements.setupScreen.classList.add('active');
+            resetWheel();
+        };
+
+        // --- Wheel Logic ---
+
+        function drawWheel() {
+            const n = state.options.length;
+            const arc = (Math.PI * 2) / n;
+
+            ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+
+            state.options.forEach((opt, i) => {
+                const startAngle = state.angle + i * arc;
+                const endAngle = startAngle + arc;
+
+                // Segment background
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.fillStyle = i % 2 === 0 ? '#1A1A1A' : '#121212';
+                ctx.fill();
+
+                // Segment border
+                ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Text
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + arc / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = i % 2 === 0 ? "#D4AF37" : "#C5A021";
+                ctx.font = "bold 14px Inter";
+                // Shorten text if needed
+                const displayText = opt.length > 12 ? opt.substring(0, 10) + '..' : opt;
+                ctx.fillText(displayText, radius - 20, 5);
+                ctx.restore();
+            });
+
+            // Outer glow ring
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = "#D4AF37";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Center hub
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
+            ctx.fillStyle = "#D4AF37";
+            ctx.fill();
+            ctx.strokeStyle = "#121212";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Center hub reflection
+            ctx.beginPath();
+            ctx.arc(centerX - 8, centerY - 8, 5, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            ctx.fill();
+        }
+
+        elements.canvas.onclick = () => {
+            if (state.isSpinning) return;
+            state.isSpinning = true;
+            state.spinSpeed = Math.random() * 0.4 + 0.3; // High initial speed
+            animateSpin();
+        };
+
+        function animateSpin() {
+            if (state.spinSpeed > 0.001) {
+                state.angle += state.spinSpeed;
+                state.spinSpeed *= 0.985; // Natural friction
+                drawWheel();
+                requestAnimationFrame(animateSpin);
+            } else {
+                state.isSpinning = false;
+                state.spinSpeed = 0;
+                determineWinner();
+            }
+        }
+
+        function determineWinner() {
+            const n = state.options.length;
+            const arc = (Math.PI * 2) / n;
+            // Indicators at top is -PI/2
+            // The angle we track is clockwise offset for the 0-th segment.
+            // Normalize angle
+            let normalizedAngle = (state.angle % (Math.PI * 2));
+            if (normalizedAngle < 0) normalizedAngle += (Math.PI * 2);
+            
+            // Pointing at top (-PI/2)
+            // (Math.PI * 1.5 - normalizedAngle) gives the relative angle to the top pointer
+            let targetAngle = (Math.PI * 1.5 - normalizedAngle) % (Math.PI * 2);
+            if (targetAngle < 0) targetAngle += (Math.PI * 2);
+            
+            const winningIndex = Math.floor(targetAngle / arc) % n;
+            state.winner = state.options[winningIndex];
+            showResult();
+        }
+
+        function showResult() {
+            elements.winnerName.textContent = state.winner;
+            elements.popup.style.display = 'flex';
+            setTimeout(() => {
+                elements.popup.style.opacity = '1';
+            }, 10);
+        }
+
+        elements.closePopup.onclick = () => {
+            elements.popup.style.opacity = '0';
+            setTimeout(() => {
+                elements.popup.style.display = 'none';
+            }, 400);
+        };
+
+        function resetWheel() {
+            state.angle = 0;
+            state.spinSpeed = 0;
+            state.isSpinning = false;
+        }
+
+        // Initial UI
+        updateUI();
+
+    </script>
+</body>
+</html>
+
