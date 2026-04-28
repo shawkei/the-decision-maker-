@@ -23,8 +23,6 @@
             --warm-gradient: var(--gold-gradient);
         }
 
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
-
         * {
             margin: 0;
             padding: 0;
@@ -55,6 +53,7 @@
         }
 
         /* Premium Leather Texture Overlay */
+
         body::after {
             content: "";
             position: fixed;
@@ -69,6 +68,7 @@
         }
 
         /* Ambient Background Glow */
+
         body::before {
             content: "";
             position: fixed;
@@ -90,6 +90,7 @@
         }
 
         /* Casino Marquee Lights Effect */
+
         .marquee-lights {
             position: absolute;
             width: 90vmin;
@@ -129,7 +130,9 @@
         .light:nth-child(even) { animation-direction: reverse; animation-duration: 4s; }
 
         /* Staggered gold lights */
+
         .light:nth-child(n) { background: var(--accent-gold); box-shadow: 0 0 20px var(--primary); }
+
         .light:nth-child(odd) { animation-duration: 6s; }
 
         #app {
@@ -155,6 +158,7 @@
         }
 
         /* Screen Transitions */
+
         .screen {
             position: absolute;
             top: 0;
@@ -188,6 +192,7 @@
         }
 
         /* Hero Text */
+
         h1 {
             font-size: clamp(2.2rem, 9vw, 3.8rem);
             font-weight: 900;
@@ -203,6 +208,7 @@
         }
 
         /* Input Section */
+
         .input-group {
             display: flex;
             gap: 6px;
@@ -258,6 +264,7 @@
         }
 
         /* Chips */
+
         #options-list {
             flex: 1;
             overflow-y: auto;
@@ -296,6 +303,7 @@
             font-weight: 800;
             transition: transform 0.2s;
         }
+
         .chip .remove:hover { transform: scale(1.2); }
 
         @keyframes bounceIn {
@@ -305,6 +313,7 @@
         }
 
         /* Done Button */
+
         .done-btn {
             background: var(--gold-gradient);
             color: #000;
@@ -339,6 +348,7 @@
         }
 
         /* Wheel Screen */
+
         .back-btn {
             position: absolute;
             top: 2rem;
@@ -358,6 +368,7 @@
             justify-content: center;
             transition: all 0.2s;
         }
+
         .back-btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0px rgba(0,0,0,0.3); }
 
         .wheel-container {
@@ -402,6 +413,7 @@
         }
 
         /* Result Popup */
+
         #result-popup {
             position: fixed;
             top: 0;
@@ -494,9 +506,11 @@
         }
 
         /* Custom Scrollbar */
+
         #options-list::-webkit-scrollbar {
             width: 6px;
         }
+
         #options-list::-webkit-scrollbar-thumb {
             background: var(--primary);
             border-radius: 10px;
