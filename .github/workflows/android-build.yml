@@ -20,19 +20,23 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm install
-          # Fix for Tailwind CSS v4 native bindings in CI
-          npm install @tailwindcss/oxide-linux-x64-gnu
+          # Use --include=optional to help npm find native bindings like @tailwindcss/oxide
+          npm install --include=optional
+          # Fallback for Tailwind CSS v4 native bindings if the above fails
+          npm install @tailwindcss/oxide-linux-x64-gnu || true
 
       - name: Build Web App
         run: npm run build
 
       - name: Setup Android Project
         run: |
-          if [ ! -d "android" ]; then
+          # If android directory doesn't exist OR it's missing the Gradle wrapper jar, recreate it
+          if [ ! -d "android" ] || [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "Android project missing or incomplete. Recreating..."
+            rm -rf android
             npx cap add android
           else
-            echo "Android platform already exists, skipping 'cap add'"
+            echo "Android platform exists and appears valid."
           fi
           npx cap sync android
 
