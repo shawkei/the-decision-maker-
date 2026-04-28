@@ -16,14 +16,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install
+          # Fix for Tailwind CSS v4 native bindings in CI
+          npm install @tailwindcss/oxide-linux-x64-gnu
 
       - name: Build Web App
-        run: |
-          npm run build
+        run: npm run build
 
       - name: Setup Android Project
         run: |
