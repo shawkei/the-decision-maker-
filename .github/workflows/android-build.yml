@@ -30,22 +30,62 @@ jobs:
 
       - name: Setup Android Project
         run: |
-          # 1. CLEAN REBUILD
-          echo "Cleaning and re-adding Android platform..."
+          # 1. CLEAN START
+          echo "Removing and re-adding Android platform..."
           rm -rf android
           npx cap add android
           
-          # 2. ASSET GENERATION
-          # We ensure the assets folder has the expected naming convention for @capacitor/assets
-          echo "Generating icons and splash screens..."
-          # The tool automatically looks for icon-only.png, icon-foreground.png, etc. in assets/
+          # 2. GENERATE ASSETS
+          echo "Generating icons..."
           npx @capacitor/assets generate --android
+
+          # 3. NUCLEAR ICON OVERWRITE
+          # This script ensures that EVERY SINGLE launcher icon in the android project
+          # is exactly your assets/icon.png. It removes adaptive icon XMLs which 
+          # are usually the cause of the 'white circle' or 'green robot' issues.
+          echo "Executing deep icon overwrite..."
+          npx node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const resDir = 'android/app/src/main/res';
+          const sourceIcon = 'assets/icon.png';
           
-          # 3. VERIFY GENERATION
-          if [ ! -f "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" ]; then
-            echo "ERROR: Icon generation failed!"
-            exit 1
-          fi
+          if (!fs.existsSync(sourceIcon)) {
+            console.error('Source icon missing!');
+            process.exit(1);
+          }
+
+          function processDir(dir) {
+            if (!fs.existsSync(dir)) return;
+            fs.readdirSync(dir).forEach(file => {
+              const fullPath = path.join(dir, file);
+              if (fs.statSync(fullPath).isDirectory()) {
+                // Remove adaptive icon folders entirely
+                if (file.includes('anydpi') || file.includes('v24') || file.includes('v26')) {
+                   console.log('Removing config folder:', fullPath);
+                   fs.rmSync(fullPath, { recursive: true, force: true });
+                } else {
+                  processDir(fullPath);
+                }
+              } else {
+                // If it is a launcher asset or background config
+                if (file.startsWith('ic_launcher') || file.includes('splash')) {
+                  if (file.endsWith('.xml')) {
+                    console.log('Deleting XML config:', fullPath);
+                    fs.unlinkSync(fullPath);
+                  } else if (file.endsWith('.png')) {
+                    console.log('Targeting PNG:', fullPath);
+                    fs.copyFileSync(sourceIcon, fullPath);
+                  }
+                }
+              }
+            });
+          }
+          processDir(resDir);
+          
+          // Re-create a very simple ic_launcher.xml in anydpi if needed, 
+          // or just let it fall back to legacy PNGs (safest for forcing design).
+          "
 
           # 4. DOWNLOAD GRADLE WRAPPER
           GRADLE_VERSION=$(grep "distributionUrl" android/gradle/wrapper/gradle-wrapper.properties | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
