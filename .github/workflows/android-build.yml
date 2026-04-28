@@ -38,6 +38,8 @@ jobs:
           else
             echo "Android platform exists and appears valid."
           fi
+          # Ensure gradlew has execute permissions
+          chmod +x android/gradlew
           npx cap sync android
 
       - name: Setup Java
