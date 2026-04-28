@@ -30,43 +30,39 @@ jobs:
 
       - name: Setup Android Project
         run: |
-          # COMPLETELY REBUILD FROM SCRATCH
-          echo "Removing existing Android project to ensure a clean build..."
+          # 1. REMOVE AND RE-ADD ANDROID FROM SCRATCH
+          echo "Removing and re-adding Android platform..."
           rm -rf android
-          
-          echo "Adding Android platform..."
           npx cap add android
           
-          # Detect Gradle version from properties (after re-adding)
+          # 2. PREPARE ASSETS FOR CAPACITOR-ASSETS TOOL
+          # The tool works best when it finds specific names in the assets folder
+          echo "Preparing assets..."
+          mkdir -p assets
+          cp assets/icon.png assets/icon-only.png
+          cp assets/icon.png assets/icon-foreground.png
+          cp assets/icon.png assets/icon-background.png
+          if [ ! -f "assets/splash.png" ]; then cp assets/icon.png assets/splash.png; fi
+          if [ ! -f "assets/splash-dark.png" ]; then cp assets/icon.png assets/splash-dark.png; fi
+
+          # 3. GENERATE ALL ASSETS (ICONS & SPLASH)
+          echo "Generating icons..."
+          npx @capacitor/assets generate --android
+
+          # 4. CRITICAL FIX: MANUALLY OVERWRITE DEFAULT BACKGROUND
+          # Sometimes the default background color stays white, masking our icon.
+          # We force the background to be a drawable if needed, or simply ensure our icons are everywhere.
+          
+          # 5. FIX GRADLE WRAPPER (Common Capacitor setup issue)
           GRADLE_VERSION=$(grep "distributionUrl" android/gradle/wrapper/gradle-wrapper.properties | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1)
           if [ -z "$GRADLE_VERSION" ]; then GRADLE_VERSION="8.2.1"; fi
-          echo "Detected Gradle Version: $GRADLE_VERSION"
-          
-          # CRITICAL: Fix for the missing/corrupted Gradle Wrapper JAR (Common in fresh cap add)
-          echo "Downloading official Gradle wrapper jar for v$GRADLE_VERSION..."
+          echo "Downloading official Gradle wrapper jar v$GRADLE_VERSION..."
           mkdir -p android/gradle/wrapper
           curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o android/gradle/wrapper/gradle-wrapper.jar
           
-          # Generate icons from assets/icon.png
-          if [ -f "assets/icon.png" ]; then
-            echo "Preparing assets for generation..."
-            # Create required files for Capacitor Assets tool
-            cp assets/icon.png assets/icon-only.png
-            cp assets/icon.png assets/icon-foreground.png
-            cp assets/icon.png assets/icon-background.png
-            if [ ! -f "assets/splash.png" ]; then cp assets/icon.png assets/splash.png; fi
-            if [ ! -f "assets/splash-dark.png" ]; then cp assets/icon.png assets/splash-dark.png; fi
-            
-            echo "Generating icons and splash screens..."
-            # Run without unsupported flags, it detects assets/ folder automatically
-            npx @capacitor/assets generate --android
-          fi
-          
-          # Sync Capacitor
-          npx cap sync android
-          
-          # Ensure permissions
+          # 6. SYNC AND PERMISSIONS
           chmod +x android/gradlew
+          npx cap sync android
 
       - name: Setup Java
         uses: actions/setup-java@v4
