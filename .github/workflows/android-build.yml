@@ -30,17 +30,23 @@ jobs:
 
       - name: Setup Android Project
         run: |
-          # If android directory doesn't exist OR it's missing the Gradle wrapper jar, recreate it
-          if [ ! -d "android" ] || [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ]; then
-            echo "Android project missing or incomplete. Recreating..."
-            rm -rf android
+          # Ensure android directory exists
+          if [ ! -d "android" ]; then
             npx cap add android
-          else
-            echo "Android platform exists and appears valid."
           fi
-          # Ensure gradlew has execute permissions
-          chmod +x android/gradlew
+          
+          # Force sync
           npx cap sync android
+          
+          # CRITICAL: Fix for the missing Gradle Wrapper JAR if it's missing or ignored
+          if [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "Gradle wrapper jar missing. Downloading official wrapper..."
+            mkdir -p android/gradle/wrapper
+            curl -L https://raw.githubusercontent.com/gradle/gradle/v8.2.1/gradle/wrapper/gradle-wrapper.jar -o android/gradle/wrapper/gradle-wrapper.jar
+          fi
+          
+          # Ensure permissions
+          chmod +x android/gradlew
 
       - name: Setup Java
         uses: actions/setup-java@v4
